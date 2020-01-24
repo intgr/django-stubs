@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional, Set, Union, TypeVar, overload, Protocol, Any
+from typing import Callable, List, Optional, Set, Union, TypeVar, overload
 
 from django.contrib.auth import REDIRECT_FIELD_NAME as REDIRECT_FIELD_NAME  # noqa: F401
 from django.http.response import HttpResponseBase

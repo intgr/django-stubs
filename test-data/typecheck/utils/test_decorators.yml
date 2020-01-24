@@ -1,12 +1,12 @@
--   case: atomic_bare
+-   case: method_decorator_class
     main: |
       from django.views.generic.base import View
       from django.utils.decorators import method_decorator
       from django.contrib.auth.decorators import login_required
       @method_decorator(login_required, name='dispatch')
       class TestView(View): ...
-      reveal_type(TestView)  # N: Revealed type is 'def (x: builtins.int) -> builtins.list[Any]'
--   case: atomic_args
+      reveal_type(TestView())  # N: Revealed type is 'main.TestView'
+-   case: method_decorator_function
     main: |
       from django.views.generic.base import View
       from django.utils.decorators import method_decorator
