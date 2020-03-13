@@ -1,5 +1,8 @@
 from typing import Any
 
+from django.db.backends.base.base import BaseDatabaseWrapper
+from django.db.utils import ConnectionRouter
+
 from .utils import (
     DEFAULT_DB_ALIAS as DEFAULT_DB_ALIAS,
     DJANGO_VERSION_PICKLE_KEY as DJANGO_VERSION_PICKLE_KEY,
@@ -18,9 +21,10 @@ from .utils import (
 
 from . import migrations
 
-connections: Any
-router: Any
-connection: Any
+connections: ConnectionHandler
+router: ConnectionRouter
+# Actually DefaultConnectionProxy, but simply wraps BaseDatabaseWrapper
+connection: BaseDatabaseWrapper
 
 class DefaultConnectionProxy:
     def __getattr__(self, item: str) -> Any: ...
