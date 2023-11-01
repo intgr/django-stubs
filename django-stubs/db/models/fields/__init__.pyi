@@ -49,10 +49,25 @@ _AllLimitChoicesTo: TypeAlias = _LimitChoicesTo | _ChoicesCallable  # noqa: PYI0
 _ErrorMessagesMapping: TypeAlias = Mapping[str, _StrOrPromise]
 _ErrorMessagesDict: TypeAlias = dict[str, _StrOrPromise]
 
-# __set__ value type
+_T = TypeVar("_T")
+
+
+# __set__ value type on Field
 _ST = TypeVar("_ST", contravariant=True)
-# __get__ return type
+# __get__ return type on Field
 _GT = TypeVar("_GT", covariant=True)
+
+# __get__ type on attribute
+_AST = TypeVar("_AST", contravariant=True)
+_AGT = TypeVar("_AGT", covariant=True)
+
+class _CaptureFieldGetType(Protocol[_T]):
+    _pyi_private_get_type: _T
+
+
+class _CaptureFieldSetType(Protocol[_T]):
+    _pyi_private_set_type: _T
+
 
 class Field(RegisterLookupMixin, Generic[_ST, _GT]):
     """
@@ -113,8 +128,8 @@ class Field(RegisterLookupMixin, Generic[_ST, _GT]):
     It is required to enhance parts like ``filter`` queries.
     """
 
-    _pyi_private_set_type: Any
-    _pyi_private_get_type: Any
+    _pyi_private_set_type: str
+    _pyi_private_get_type: int
     _pyi_lookup_exact_type: Any
 
     widget: Widget
@@ -181,13 +196,13 @@ class Field(RegisterLookupMixin, Generic[_ST, _GT]):
         validators: Iterable[validators._ValidatorCallable] = ...,
         error_messages: _ErrorMessagesMapping | None = ...,
     ) -> None: ...
-    def __set__(self, instance: Any, value: _ST) -> None: ...
+    def __set__(self: _CaptureFieldGetType[_AST], instance: Model, value: _AST) -> None: ...
     # class access
     @overload
     def __get__(self, instance: None, owner: Any) -> _FieldDescriptor[Self]: ...
     # Model instance access
     @overload
-    def __get__(self, instance: Model, owner: Any) -> _GT: ...
+    def __get__(self: _CaptureFieldGetType[_AGT], instance: Model, owner: Any) -> _AGT: ...
     # non-Model instances
     @overload
     def __get__(self, instance: Any, owner: Any) -> Self: ...
