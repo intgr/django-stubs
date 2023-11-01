@@ -1,0 +1,42 @@
+- case: test_implicit_manager_noplugin
+  mypy_config: |
+    [mypy]
+    plugins =
+    disable_error_code = var-annotated
+  main: |
+    from django.db import models
+
+    class MyModel(models.Model):
+        pass
+
+    reveal_type(MyModel.objects)  # N: Revealed type is "django.db.models.manager.Manager[main.MyModel]"
+    reveal_type(MyModel.objects.all())  # N: Revealed type is "django.db.models.query._QuerySet[main.MyModel, main.MyModel]"
+    reveal_type(MyModel.objects.get())  # N: Revealed type is "main.MyModel"
+    reveal_type(MyModel._default_manager)  # N: Revealed type is "django.db.models.manager.BaseManager[main.MyModel]"
+    reveal_type(MyModel._base_manager)  # N: Revealed type is "django.db.models.manager.BaseManager[main.MyModel]"
+
+    MyModel()._default_manager  # E: "MyModel" has no attribute "_default_manager"  [attr-defined]
+    MyModel()._base_manager  # E: "MyModel" has no attribute "_base_manager"  [attr-defined]
+
+    # These are incorrect, but can't do better without plugin
+    reveal_type(MyModel().objects)  # N: Revealed type is "django.db.models.manager.Manager[main.MyModel]"
+
+- case: test_explicit_vanilla_manager_noplugin
+  mypy_config: |
+    [mypy]
+    plugins =
+    disable_error_code = var-annotated
+  main: |
+    from typing_extensions import Self
+    from django.db import models
+
+    class MyModel(models.Model):
+        my_objects = models.Manager["MyModel"]()
+
+    reveal_type(MyModel.my_objects)  # N: Revealed type is "django.db.models.manager.Manager[main.MyModel]"
+    reveal_type(MyModel.my_objects.all())  # N: Revealed type is "django.db.models.query._QuerySet[main.MyModel, main.MyModel]"
+    reveal_type(MyModel.my_objects.get())  # N: Revealed type is "main.MyModel"
+
+    # These are incorrect, but can't do better without plugin?
+    reveal_type(MyModel.objects)  # N: Revealed type is "django.db.models.manager.Manager[main.MyModel]"
+    reveal_type(MyModel().my_objects)  # N: Revealed type is "django.db.models.manager.Manager[main.MyModel]"
