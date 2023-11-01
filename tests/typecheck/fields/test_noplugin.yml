@@ -1,0 +1,30 @@
+- case: test_fields_noplugin
+  mypy_config: |
+    [mypy]
+    plugins =
+    disable_error_code = var-annotated, override  # FIXME
+  main: |
+    from django.db import models
+
+    class MyModel(models.Model):
+        hack = models.Field()
+        uuid = models.UUIDField(unique=True)
+        name = models.CharField(max_length=255)
+        slug = models.SlugField(max_length=255)
+        text = models.TextField()
+        small_int = models.SmallIntegerField()
+        created_at = models.DateTimeField(auto_now_add=True)
+
+    reveal_type(MyModel.id)  # N: Revealed type is "django.db.models.fields._FieldDescriptor[django.db.models.fields.BigAutoField[Any, Any]]"
+    reveal_type(MyModel.name)  # N: Revealed type is "django.db.models.fields._FieldDescriptor[django.db.models.fields.CharField[Any, Any]]"
+
+    instance = MyModel.objects.get()
+    reveal_type(instance)
+
+    # reveal_type(instance.id)
+    reveal_type(instance.hack)
+    reveal_type(instance.name)
+    reveal_type(instance.uuid)
+    reveal_type(instance.slug)
+    reveal_type(instance.text)
+    reveal_type(instance.created_at)
