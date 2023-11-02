@@ -2,29 +2,65 @@
   mypy_config: |
     [mypy]
     plugins =
-    disable_error_code = var-annotated, override  # FIXME
+    disable_error_code = var-annotated
   main: |
+    from uuid import UUID
     from django.db import models
+    from django.contrib.auth.models import User
 
     class MyModel(models.Model):
-        hack = models.Field()
         uuid = models.UUIDField(unique=True)
-        name = models.CharField(max_length=255)
-        slug = models.SlugField(max_length=255)
+        char = models.CharField(max_length=255)
         text = models.TextField()
-        small_int = models.SmallIntegerField()
+        small_int = models.PositiveSmallIntegerField(null=True)
         created_at = models.DateTimeField(auto_now_add=True)
 
-    reveal_type(MyModel.id)  # N: Revealed type is "django.db.models.fields._FieldDescriptor[django.db.models.fields.BigAutoField[Any, Any]]"
-    reveal_type(MyModel.name)  # N: Revealed type is "django.db.models.fields._FieldDescriptor[django.db.models.fields.CharField[Any, Any]]"
+    MyModel.id  # E: "Type[MyModel]" has no attribute "id"  [attr-defined]
+    reveal_type(MyModel.char)  # N: Revealed type is "django.db.models.fields._FieldDescriptor[django.db.models.fields.CharField[Any, Any]]"
 
     instance = MyModel.objects.get()
-    reveal_type(instance)
 
-    # reveal_type(instance.id)
-    reveal_type(instance.hack)
-    reveal_type(instance.name)
-    reveal_type(instance.uuid)
-    reveal_type(instance.slug)
-    reveal_type(instance.text)
-    reveal_type(instance.created_at)
+    # These are incorrect without mypy_django_plugin
+    instance.id  # E: "MyModel" has no attribute "id"  [attr-defined]
+    reveal_type(instance.uuid)  # N: Revealed type is "Any"
+    reveal_type(instance.char)  # N: Revealed type is "Any"
+    reveal_type(instance.small_int)  # N: Revealed type is "Any"
+    reveal_type(instance.created_at)  # N: Revealed type is "Any"
+
+    # Allowed
+    instance.small_int = 42
+    instance.small_int = None
+    instance.uuid = UUID("3fb4eb52-0564-486f-9343-0073178b7931")
+    instance.uuid = "3fb4eb52-0564-486f-9343-0073178b7931"
+
+    # Should not be allowed
+    instance.small_int = "42"
+    instance.uuid = 42
+    instance.uuid = None
+
+- case: test_related_fields_noplugin
+  mypy_config: |
+    [mypy]
+    plugins =
+    disable_error_code = var-annotated
+  main: |
+    from django.db import models
+    from django.contrib.auth.models import User
+
+    class MyModel(models.Model):
+        foreign_key = models.ForeignKey(User, on_delete=models.CASCADE)
+        foreign_object = models.ForeignObject(User, on_delete=models.CASCADE, from_fields=["user_fk_id"], to_fields=["id"])
+        one_to_one = models.OneToOneField(User, on_delete=models.CASCADE)
+        many_to_many = models.ManyToManyField(User)
+
+    # These are incorrect without mypy_django_plugin
+    MyModel.foreign_key
+
+    instance = MyModel.objects.get()
+
+    instance.id  # E: "MyModel" has no attribute "id"  [attr-defined]
+    reveal_type(instance.uuid)  # N: Revealed type is "Any"
+    reveal_type(instance.char)  # N: Revealed type is "Any"
+    reveal_type(instance.small_int)  # N: Revealed type is "Any"
+    reveal_type(instance.created_at)  # N: Revealed type is "Any"
+    reveal_type(instance.user)  # N: Revealed type is "Any"
